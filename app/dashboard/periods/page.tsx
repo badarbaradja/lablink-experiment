@@ -20,10 +20,38 @@ export default function PeriodsPage() {
   // Modal State
   const [showModal, setShowModal] = useState(false);
   const [editingPeriod, setEditingPeriod] = useState<Period | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Form State
+  const [formData, setFormData] = useState({
+    code: '',
+    name: '',
+    startDate: '',
+    endDate: ''
+  });
 
   useEffect(() => {
     fetchPeriods();
   }, []);
+
+  // Reset form when modal opens/closes or editingPeriod changes
+  useEffect(() => {
+    if (editingPeriod) {
+      setFormData({
+        code: editingPeriod.code || '',
+        name: editingPeriod.name || '',
+        startDate: editingPeriod.startDate ? new Date(editingPeriod.startDate).toISOString().split('T')[0] : '',
+        endDate: editingPeriod.endDate ? new Date(editingPeriod.endDate).toISOString().split('T')[0] : ''
+      });
+    } else {
+      setFormData({
+        code: '',
+        name: '',
+        startDate: '',
+        endDate: ''
+      });
+    }
+  }, [editingPeriod, showModal]);
 
   const fetchPeriods = async () => {
     try {
@@ -38,10 +66,43 @@ export default function PeriodsPage() {
     }
   };
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { id, value } = e.target;
+    setFormData(prev => ({ ...prev, [id]: value }));
+  };
+
+  const handleSubmit = async () => {
+    try {
+      setIsSubmitting(true);
+      
+      const payload = {
+        code: formData.code,
+        name: formData.name,
+        startDate: new Date(formData.startDate).toISOString(),
+        endDate: new Date(formData.endDate).toISOString()
+      };
+
+      if (editingPeriod) {
+        await api.put(`/periods/${editingPeriod.id}`, payload);
+      } else {
+        await api.post('/periods', payload);
+      }
+      
+      setShowModal(false);
+      setEditingPeriod(null);
+      fetchPeriods();
+    } catch (error) {
+      console.error('Failed to save period:', error);
+      alert('Gagal menyimpan periode. Pastikan data valid.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   // --- ACTIONS (Hanya bisa dipanggil jika Admin) ---
   const handleActivatePeriod = async (id: string) => {
     try {
-      await api.patch(`/periods/${id}/activate`, {});
+      await api.post(`/periods/${id}/activate`, {});
       fetchPeriods();
     } catch (error) {
       console.error('Failed to activate period:', error);
@@ -92,7 +153,10 @@ export default function PeriodsPage() {
         {/* BUTTON BUAT PERIODE (Hanya muncul jika ADMIN) */}
         {isAdmin && (
           <Button 
-            onClick={() => setShowModal(true)}
+            onClick={() => {
+              setEditingPeriod(null);
+              setShowModal(true);
+            }}
             className="shadow-lg hover:shadow-xl transition-all duration-200"
           >
             <Plus className="w-5 h-5 mr-2" />
@@ -217,7 +281,10 @@ export default function PeriodsPage() {
                       )}
                       
                       <button
-                        onClick={() => setEditingPeriod(period)}
+                        onClick={() => {
+                          setEditingPeriod(period);
+                          setShowModal(true);
+                        }}
                         className="p-2 bg-blue-500/10 text-blue-600 dark:text-blue-400 hover:bg-blue-500/20 rounded-lg transition-all"
                         title="Edit"
                       >
@@ -265,15 +332,43 @@ export default function PeriodsPage() {
             </div>
             
             <div className="space-y-4">
-              <Input label="Kode Periode" placeholder="Contoh: P2024-1" />
-              <Input label="Nama Periode" placeholder="Contoh: Periode Rekrutmen 2024/2025" />
+              <Input 
+                  id="code"
+                  label="Kode Periode" 
+                  placeholder="Contoh: P2024-1" 
+                  value={formData.code}
+                  onChange={handleInputChange}
+              />
+              <Input 
+                  id="name"
+                  label="Nama Periode" 
+                  placeholder="Contoh: Periode Rekrutmen 2024/2025" 
+                  value={formData.name}
+                  onChange={handleInputChange}
+              />
               <div className="grid grid-cols-2 gap-4">
-                <Input label="Tanggal Mulai" type="date" />
-                <Input label="Tanggal Selesai" type="date" />
+                <Input 
+                    id="startDate"
+                    label="Tanggal Mulai" 
+                    type="date" 
+                    value={formData.startDate}
+                    onChange={handleInputChange}
+                />
+                <Input 
+                    id="endDate"
+                    label="Tanggal Selesai" 
+                    type="date" 
+                    value={formData.endDate}
+                    onChange={handleInputChange}
+                />
               </div>
               
               <div className="flex gap-3 pt-6">
-                <Button className="flex-1">
+                <Button 
+                    className="flex-1"
+                    onClick={handleSubmit}
+                    isLoading={isSubmitting}
+                >
                   {editingPeriod ? 'Simpan Perubahan' : 'Buat Periode'}
                 </Button>
                 <button

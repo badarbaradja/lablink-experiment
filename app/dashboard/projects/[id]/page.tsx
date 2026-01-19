@@ -3,7 +3,7 @@
 import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/app/lib/api';
-import { Member, Project, UpdateProjectRequest } from '@/app/types';
+import { Member, Project, UpdateProjectRequest, PageResponse } from '@/app/types';
 import Card from '@/app/components/ui/Card';
 import Button from '@/app/components/ui/Button';
 import Select from '@/app/components/ui/Select';
@@ -49,11 +49,11 @@ export default function EditProjectPage({ params }: { params: Promise<{ id: stri
     try {
       setIsLoading(true);
       const [membersData, projectData] = await Promise.all([
-        api.get<Member[]>('/members'),
+        api.get<PageResponse<Member>>('/members?page=0&size=1000'),
         api.get<Project>(`/projects/${projectId}`)
       ]);
 
-      setMembers(membersData);
+      setMembers(membersData.content);
       
       // Populate form
       setFormData({

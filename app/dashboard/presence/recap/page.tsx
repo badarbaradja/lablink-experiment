@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { api } from '@/app/lib/api';
 import { Presence } from '@/app/types/presence';
-import { Member } from '@/app/types';
+import { Member, PageResponse } from '@/app/types';
 import Card from '@/app/components/ui/Card';
 import Select from '@/app/components/ui/Select';
 import Modal from '@/app/components/ui/Modal';
@@ -67,7 +67,7 @@ export default function PresenceRecapPage() {
       const endDate = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-${lastDay}`;
 
       const [membersData, presenceData] = await Promise.all([
-        api.get<Member[]>('/members'),
+        api.get<PageResponse<Member>>('/members?page=0&size=1000'),
         api.getAllPresence({ 
           type: selectedType,
           startDate,
@@ -75,7 +75,7 @@ export default function PresenceRecapPage() {
         })
       ]);
 
-      setMembers(membersData);
+      setMembers(membersData.content);
       setPresences(presenceData);
     } catch (err) {
       console.error(err);

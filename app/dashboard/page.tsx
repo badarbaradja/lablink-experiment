@@ -136,16 +136,22 @@ export default function DashboardPage() {
     try {
       setIsLoading(true);
       // Fetching Parallel
+      // Fetching Parallel
+      // PERBAIKAN: Gunakan 'any' atau PageResponse karena response backend bisa berupa Page object
       const [summaryRes, projectsRes, eventsRes] = await Promise.all([
         api.get<DashboardSummary>('/dashboard/summary'),
-        api.get<Project[]>('/projects'),
-        api.get<Event[]>('/events')
+        api.get<any>('/projects?page=0&size=1000'), // Load all for chart
+        api.get<any>('/events?page=0&size=1000')   // Load all for chart
       ]);
 
       setSummaryData(summaryRes);
       
+      // PERBAIKAN: Cek apakah response berupa Page (punya .content) atau Array biasa
+      const projectsData = projectsRes.content || (Array.isArray(projectsRes) ? projectsRes : []);
+      const eventsData = eventsRes.content || (Array.isArray(eventsRes) ? eventsRes : []);
+
       // Proses data untuk grafik
-      const processedStats = processChartData(projectsRes, eventsRes);
+      const processedStats = processChartData(projectsData, eventsData);
       setChartData(processedStats);
 
     } catch (err) {

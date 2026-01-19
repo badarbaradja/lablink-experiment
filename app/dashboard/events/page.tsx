@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { api } from '@/app/lib/api';
-import { Event } from '@/app/types';
+import { Event, EventSchedule } from '@/app/types';
+
 import { useAuth } from '@/app/context/AuthContext';
 // UI Components
 import Card from '@/app/components/ui/Card';
@@ -27,13 +28,14 @@ export default function EventsPage() {
   const router = useRouter();
   const { isAdmin } = useAuth();
   const [events, setEvents] = useState<Event[]>([]);
+  const [schedules, setSchedules] = useState<EventSchedule[]>([]); // Added schedules state
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // --- VIEW STATE (Calendar vs Table) ---
   const [viewMode, setViewMode] = useState<'calendar' | 'table'>('calendar');
-  const [currentDate, setCurrentDate] = useState(new Date()); // Bulan yang dilihat di kalender
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date()); // Tanggal yang diklik di kalender
+  const [currentDate, setCurrentDate] = useState(new Date()); 
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date()); 
 
   // --- MODAL STATES ---
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
@@ -56,7 +58,8 @@ export default function EventsPage() {
 
   useEffect(() => {
     fetchEvents();
-  }, []);
+    fetchSchedules(); // Fetch schedules
+  }, [currentDate]); // Re-fetch schedules when month changes
 
   const fetchEvents = async () => {
     try {
@@ -69,6 +72,23 @@ export default function EventsPage() {
       setIsLoading(false);
     }
   };
+
+  const fetchSchedules = async () => {
+    try {
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth() + 1;
+      // Get first and last day of month
+      const start = `${year}-${String(month).padStart(2, '0')}-01`;
+      const end = `${year}-${String(month).padStart(2, '0')}-${new Date(year, month, 0).getDate()}`;
+      
+      const response = await api.get<EventSchedule[]>(`/events/calendar?start=${start}&end=${end}`);
+      setSchedules(response || []);
+    } catch (err) {
+      console.error("Failed to fetch schedules", err);
+    }
+  };
+
+
 
   // --- CALENDAR LOGIC ---
   const getDaysInMonth = (date: Date) => {
@@ -278,7 +298,14 @@ export default function EventsPage() {
                  const dayDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), i + 1);
                  const isToday = isSameDay(dayDate, new Date());
                  const isSelected = isSameDay(dayDate, selectedDate);
-                 const dayEvents = events.filter(e => isSameDay(new Date(e.startDate), dayDate));
+                 const dateStr = dayDate.toLocaleDateString('en-CA'); // YYYY-MM-DD
+                 const daySchedules = schedules.filter(s => s.activityDate === dateStr);
+                 const dayEvents = events.filter(e => {
+                     const start = new Date(e.startDate).setHours(0,0,0,0);
+                     const end = new Date(e.endDate).setHours(0,0,0,0);
+                     const current = dayDate.getTime();
+                     return current >= start && current <= end;
+                 });
 
                  return (
                    <div 
@@ -293,10 +320,17 @@ export default function EventsPage() {
                        {i + 1}
                      </span>
                      <div className="w-full space-y-1 overflow-hidden">
-                       {dayEvents.map((ev, idx) => (
-                         <div key={idx} className="h-1.5 w-1.5 rounded-full bg-blue-500 inline-block mr-1" title={ev.name}></div>
+                       {/* Render TEXT PILLS for SCHEDULES */}
+                       {daySchedules.map((sch, idx) => (
+                         <div 
+                           key={`sch-${idx}`} 
+                           className="text-[9px] bg-blue-100 text-blue-700 px-1 py-0.5 rounded truncate mb-0.5 border border-blue-200 font-medium" 
+                           title={sch.title}
+                         >
+                           {sch.title}
+                         </div>
                        ))}
-                       {dayEvents.length > 0 && <div className="text-[10px] text-muted-foreground font-medium truncate">{dayEvents.length} Kegiatan</div>}
+                       {daySchedules.length > 3 && <div className="text-[9px] text-muted-foreground font-medium pl-1">+{daySchedules.length - 3} More</div>}
                      </div>
                    </div>
                  );

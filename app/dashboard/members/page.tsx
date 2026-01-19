@@ -40,8 +40,18 @@ export default function MembersPage() {
   const fetchMembers = async () => {
     try {
       setIsLoading(true);
-      const response = await api.get<Member[]>('/members');
-      setMembers(response);
+      // PERBAIKAN: Request page besar untuk simulasi "load all" bagi client-side filtering
+      const response = await api.get<any>('/members?page=0&size=1000');
+      
+      // Handle Spring Data Page structure
+      if (response.content) {
+        setMembers(response.content);
+      } else if (Array.isArray(response)) {
+        setMembers(response);
+      } else {
+        setMembers([]);
+        console.error('Unexpected API response for members:', response);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load members');
     } finally {

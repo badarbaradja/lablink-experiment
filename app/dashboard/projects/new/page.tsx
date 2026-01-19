@@ -36,8 +36,14 @@ export default function NewProjectPage() {
 
   const fetchMembers = async () => {
     try {
-      const response = await api.get<Member[]>('/members');
-      setMembers(response);
+      const response = await api.get<any>('/members?page=0&size=1000');
+      if (response && response.content) {
+        setMembers(response.content);
+      } else if (Array.isArray(response)) {
+        setMembers(response);
+      } else {
+        setMembers([]);
+      }
     } catch (err) {
       showError('Gagal memuat data member');
     }

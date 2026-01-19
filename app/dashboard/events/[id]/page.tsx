@@ -51,11 +51,17 @@ export default function EditEventPage({ params }: { params: Promise<{ id: string
     try {
       setIsLoading(true);
       const [membersData, eventData] = await Promise.all([
-        api.get<Member[]>('/members'),
+        api.get<any>('/members?page=0&size=1000'),
         api.get<Event>(`/events/${eventId}`)
       ]);
 
-      setMembers(membersData);
+      if (membersData && membersData.content) {
+        setMembers(membersData.content);
+      } else if (Array.isArray(membersData)) {
+        setMembers(membersData);
+      } else {
+        setMembers([]);
+      }
       
       // Populate form
       setFormData({

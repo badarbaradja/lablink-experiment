@@ -1,20 +1,77 @@
-'use client';
-
+import { useState } from 'react';
+import { api } from '@/app/lib/api';
+import { useAuth } from '@/app/context/AuthContext';
+import { useToast } from '@/app/hooks/useToast';
 import Modal from '@/app/components/ui/Modal';
+import Button from '@/app/components/ui/Button';
 import { Project } from '@/app/types';
 
 interface ProjectDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   project: Project | null;
+  onSuccess?: () => void;
 }
 
 export default function ProjectDetailModal({
   isOpen,
   onClose,
   project,
+  onSuccess,
 }: ProjectDetailModalProps) {
+  const { user, isAdmin } = useAuth(); // isAdmin is minimal check, ideally check role
+  const { success: showSuccess, error: showError } = useToast();
+  
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [showRejectForm, setShowRejectForm] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState('');
+
   if (!project) return null;
+  
+  // Reset state when modal closes/opens
+  if (!isOpen && showRejectForm) setShowRejectForm(false);
+
+  // Helper to check if user can approve
+  const canApprove = isAdmin || user?.role === 'RESEARCH_COORD' || user?.role === 'DIVISION_HEAD';
+
+  const handleApprove = async () => {
+    // Basic confirmation
+    if (typeof window !== 'undefined' && !window.confirm('Apakah Anda yakin ingin menyetujui proyek ini?')) return;
+
+    try {
+      setIsProcessing(true);
+      console.log(`Approving project ${project.id}...`);
+      await api.post(`/projects/${project.id}/approve`, {});
+      console.log('Approval success');
+      showSuccess('Proyek berhasil disetujui');
+      if (onSuccess) onSuccess();
+      else onClose();
+    } catch (err) {
+      console.error('Approval failed:', err);
+      showError(err instanceof Error ? err.message : 'Gagal menyetujui proyek');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleReject = async () => {
+    if (!rejectionReason.trim()) {
+      alert('Harap masukkan alasan penolakan');
+      return;
+    }
+    
+    try {
+      setIsProcessing(true);
+      await api.post(`/projects/${project.id}/reject`, { rejectionReason });
+      showSuccess('Proyek berhasil ditolak');
+      if (onSuccess) onSuccess();
+      else onClose();
+    } catch (err) {
+      showError(err instanceof Error ? err.message : 'Gagal menolak proyek');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
 
   const STATUS_COLORS: Record<string, string> = {
     NOT_STARTED: 'bg-gray-100 text-gray-700',
@@ -34,6 +91,50 @@ export default function ProjectDetailModal({
       cancelText="Tutup"
     >
       <div className="space-y-6">
+        {/* APPROVAL SECTION for Pending Projects */}
+        {project.approvalStatus === 'PENDING' && canApprove && (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-4">
+                <h4 className="text-sm font-bold text-yellow-800 mb-2">Persetujuan Diperlukan</h4>
+                <p className="text-xs text-yellow-700 mb-4">
+                    Proyek ini menunggu persetujuan dari Admin atau Kepala Divisi.
+                </p>
+                
+                {!showRejectForm ? (
+                    <div className="flex gap-2">
+                        <Button 
+                            className="bg-green-600 hover:bg-green-700 text-white" 
+                            onClick={handleApprove}
+                            isLoading={isProcessing}
+                        >
+                            ✓ Setujui
+                        </Button>
+                        <Button 
+                            variant="danger" 
+                            onClick={() => setShowRejectForm(true)}
+                            isLoading={isProcessing}
+                        >
+                            ✕ Tolak
+                        </Button>
+                    </div>
+                ) : (
+                    <div className="space-y-2">
+                        <textarea
+                            className="w-full text-sm p-2 border rounded-md"
+                            placeholder="Masukkan alasan penolakan..."
+                            rows={2}
+                            value={rejectionReason}
+                            onChange={(e) => setRejectionReason(e.target.value)}
+                        />
+                        <div className="flex gap-2 justify-end">
+                            <Button size="sm" variant="secondary" onClick={() => setShowRejectForm(false)}>Batal</Button>
+                            <Button size="sm" variant="danger" onClick={handleReject} isLoading={isProcessing}>Kirim Penolakan</Button>
+                        </div>
+                    </div>
+                )}
+            </div>
+        )}
+
+        {/* ... Existing Content ... */}
         <div>
           <h3 className="text-xl font-bold text-gray-900">{project.name}</h3>
           <div className="flex flex-wrap gap-2 mt-2">
@@ -44,6 +145,15 @@ export default function ProjectDetailModal({
             >
               {statusLabel}
             </span>
+            {project.approvalStatus && (
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    project.approvalStatus === 'APPROVED' ? 'bg-green-100 text-green-800' :
+                    project.approvalStatus === 'REJECTED' ? 'bg-red-100 text-red-800' :
+                    'bg-yellow-100 text-yellow-800'
+                }`}>
+                    {project.approvalStatus}
+                </span>
+            )}
             <span className="px-2 py-1 rounded-full text-xs font-medium bg-purple-50 text-purple-700 border border-purple-100">
               {project.division.replace('_', ' ')}
             </span>
@@ -106,6 +216,14 @@ export default function ProjectDetailModal({
             <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg border border-gray-100 mt-1">
               {project.description}
             </p>
+          </div>
+        )}
+        
+        {/* Rejection Detail if Rejected */}
+        {project.approvalStatus === 'REJECTED' && project.rejectionReason && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+             <label className="text-xs text-red-800 uppercase tracking-wide font-semibold">Alasan Penolakan</label>
+             <p className="text-sm text-red-700 mt-1">{project.rejectionReason}</p>
           </div>
         )}
 

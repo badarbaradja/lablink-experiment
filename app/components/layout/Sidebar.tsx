@@ -16,7 +16,8 @@ import {
   Activity,      // Icon baru untuk Activity Log
   ChevronLeft,
   ChevronRight,
-  User
+  User,
+  Banknote // ADDED
 } from 'lucide-react';
 
 interface MenuItem {
@@ -34,6 +35,7 @@ const menuItems: MenuItem[] = [
   { label: 'Surat', href: '/dashboard/letters', icon: Mail },
   { label: 'Arsip', href: '/dashboard/archives', icon: Archive },
   { label: 'Presensi', href: '/dashboard/presence', icon: ClipboardCheck },
+  { label: 'Keuangan', href: '/dashboard/finance', icon: Banknote }, // ADDED FINANCE
   // UPDATE: Periode dibuka untuk semua (View Only diatur di halaman)
   { label: 'Periode', href: '/dashboard/periods', icon: CalendarRange }, 
   // UPDATE: Activity Log dibuka untuk semua

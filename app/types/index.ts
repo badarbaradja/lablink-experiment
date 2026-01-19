@@ -12,6 +12,35 @@ export interface ApiResponse<T> {
   };
 }
 
+export interface PageResponse<T> {
+  content: T[];
+  pageable: {
+    pageNumber: number;
+    pageSize: number;
+    sort: {
+      empty: boolean;
+      sorted: boolean;
+      unsorted: boolean;
+    };
+    offset: number;
+    paged: boolean;
+    unpaged: boolean;
+  };
+  last: boolean;
+  totalPages: number;
+  totalElements: number;
+  size: number;
+  number: number;
+  sort: {
+    empty: boolean;
+    sorted: boolean;
+    unsorted: boolean;
+  };
+  first: boolean;
+  numberOfElements: number;
+  empty: boolean;
+}
+
 // ==========================================
 // 2. AUTH & USER
 // ==========================================
@@ -155,6 +184,10 @@ export interface Project {
   progressPercent: number;
   leader: MemberSummary;
   teamMembers: MemberSummary[];
+  approvalStatus: 'PENDING' | 'APPROVED' | 'REJECTED';
+  rejectionReason?: string;
+  approvedAt?: string;
+  approvedBy?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -220,6 +253,29 @@ export interface CreateEventRequest {
   eventType: string;
   location: string;
   picId: string;
+  schedules?: EventScheduleRequest[];
+}
+
+export interface EventScheduleRequest {
+  activityDate: string;
+  title: string;
+  description?: string;
+  startTime?: string;
+  endTime?: string;
+  location?: string;
+}
+
+export interface EventSchedule {
+  id: string;
+  eventId: string;
+  eventCode: string;
+  eventName: string;
+  activityDate: string;
+  title: string; // Activity Title (e.g. "Sesi 1")
+  description: string;
+  startTime: string;
+  endTime: string;
+  location: string;
 }
 
 export interface UpdateEventRequest {
@@ -345,10 +401,91 @@ export interface IncomingLetter {
   updatedAt: string;
 }
 
-export interface CreateIncomingLetterRequest {
-  senderName: string;
-  senderInstitution: string;
-  subject: string;
-  receivedDate: string;
+export interface UpdateIncomingLetterRequest {
+  senderName?: string;
+  senderInstitution?: string;
+  subject?: string;
+  receivedDate?: string;
   notes?: string;
+}
+
+// ==========================================
+// 10. FINANCE (KEUANGAN)
+// ==========================================
+
+export interface FinanceCategory {
+  id: string;
+  name: string;
+  type: 'INCOME' | 'EXPENSE' | 'BOTH';
+  description?: string;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface FinanceTransaction {
+  id: string;
+  type: 'INCOME' | 'EXPENSE';
+  categoryId: string;
+  categoryName: string;
+  amount: number;
+  transactionDate: string;
+  description?: string;
+  receiptUrl?: string; // from backend receiptUrl
+  eventId?: string;
+  eventName?: string;
+  projectId?: string;
+  projectName?: string;
+  periodId: string; // Period Architecture
+  createdBy: string;
+  createdAt: string;
+}
+
+export interface TransactionSummary {
+  totalIncome: number;
+  totalExpense: number;
+  balance: number;
+  incomeByCategory: { categoryName: string; total: number }[];
+  expenseByCategory: { categoryName: string; total: number }[];
+}
+
+export interface CreateTransactionRequest {
+  type: 'INCOME' | 'EXPENSE';
+  categoryId: string;
+  amount: number;
+  transactionDate: string;
+  description?: string;
+  eventId?: string;
+  projectId?: string;
+}
+
+// Uang Kas
+export interface DuesPayment {
+  id: string;
+  memberId: string;
+  memberName: string;
+  memberNim: string;
+  periodId: string;
+  paymentMonth: number;
+  paymentYear: number;
+  amount: number;
+  paidAt: string;
+  paymentProofUrl?: string;
+  status: 'PENDING' | 'VERIFIED' | 'REJECTED';
+  verifiedBy?: string;
+  createdAt: string;
+}
+
+// Pengadaan Barang
+export interface ProcurementRequest {
+  id: string;
+  requesterName: string;
+  itemName: string;
+  description: string;
+  reason: string;
+  estimatedPrice: number;
+  priority: 'LOW' | 'MEDIUM' | 'HIGH';
+  purchaseLink?: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'PURCHASED';
+  rejectionReason?: string;
+  createdAt: string;
 }

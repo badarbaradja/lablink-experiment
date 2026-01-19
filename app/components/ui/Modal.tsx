@@ -11,6 +11,7 @@ interface ModalProps {
   cancelText?: string;
   isLoading?: boolean;
   variant?: 'danger' | 'primary';
+  hideFooter?: boolean;
 }
 
 export default function Modal({
@@ -23,6 +24,7 @@ export default function Modal({
   cancelText = 'Cancel',
   isLoading = false,
   variant = 'primary',
+  hideFooter = false,
 }: ModalProps) {
   if (!isOpen) return null;
 
@@ -45,20 +47,22 @@ export default function Modal({
         <div className="px-6 py-4 text-gray-700">{children}</div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-gray-200 flex gap-3 justify-end">
-          <Button variant="secondary" onClick={onClose} disabled={isLoading}>
-            {cancelText}
-          </Button>
-          {onConfirm && (
-            <Button
-              variant={variant}
-              onClick={onConfirm}
-              isLoading={isLoading}
-            >
-              {confirmText}
+        {!hideFooter && (
+          <div className="px-6 py-4 border-t border-gray-200 flex gap-3 justify-end">
+            <Button variant="secondary" onClick={onClose} disabled={isLoading}>
+              {cancelText}
             </Button>
-          )}
-        </div>
+            {onConfirm && (
+              <Button
+                variant={variant}
+                onClick={onConfirm}
+                isLoading={isLoading}
+              >
+                {confirmText}
+              </Button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

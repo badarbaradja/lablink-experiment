@@ -51,8 +51,17 @@ export default function ProjectsPage() {
   const fetchProjects = async () => {
     try {
       setIsLoading(true);
-      const response = await api.get<Project[]>('/projects');
-      setProjects(response);
+      // Fetch "all" projects for client-side filtering by requesting a large page size
+      // Ideally we should implement server-side filtering, but to keep current UI logic working:
+      const response = await api.get<any>('/projects?page=0&size=1000');
+      // Handle Spring Data Page structure
+      if (response.content) {
+        setProjects(response.content);
+      } else {
+        // Fallback if backend API structure changes
+        setProjects([]);
+        console.error('Unexpected API response structure:', response);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load projects');
     } finally {
@@ -129,6 +138,15 @@ export default function ProjectsPage() {
           COMPLETED: 'bg-green-500/10 text-green-700 dark:text-green-400',
           CANCELLED: 'bg-red-500/10 text-red-700 dark:text-red-400',
         };
+
+        if (item.approvalStatus === 'PENDING') {
+           return (
+             <span className="px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 border border-yellow-200">
+               Pending Approval
+             </span>
+           );
+        }
+
         return (
           <span className={`px-2 py-1 rounded-full text-xs font-medium ${colors[item.status] || 'bg-slate-500/10'}`}>
             {item.status.replace('_', ' ')}
@@ -223,11 +241,10 @@ export default function ProjectsPage() {
       {/* SECTION 1: Header */}
       <AnimatedSection className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-foreground">Projects</h1>
-        {isAdmin && (
-          <Button onClick={() => router.push('/dashboard/projects/new')}>
-            + Buat Proyek
-          </Button>
-        )}
+        {/* Allow all authenticated users to create projects */}
+        <Button onClick={() => router.push('/dashboard/projects/new')}>
+          + Buat Proyek
+        </Button>
       </AnimatedSection>
 
       {/* SECTION 2: Filters & Table */}
@@ -303,6 +320,10 @@ export default function ProjectsPage() {
          isOpen={!!selectedProject}
          onClose={() => setSelectedProject(null)}
          project={selectedProject}
+         onSuccess={() => {
+           setSelectedProject(null);
+           fetchProjects();
+         }}
       />
 
       <Modal
