@@ -158,6 +158,9 @@ export interface Period {
   endDate: string;
   isActive: boolean;
   isArchived: boolean;
+  totalMembers?: number;
+  totalProjects?: number;
+  totalEvents?: number;
   createdAt?: string;
 }
 

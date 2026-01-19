@@ -39,7 +39,7 @@ export default function ProcurementList() {
     if (!confirm('Setujui pengadaan ini?')) return;
     try {
       setProcessingId(id);
-      await api.post(`/finance/procurement/${id}/approve`, {});
+      await api.put(`/finance/procurement/${id}/approve`, {});
       showSuccess('Pengadaan disetujui');
       fetchRequests();
     } catch (err) {
@@ -55,7 +55,7 @@ export default function ProcurementList() {
     
     try {
       setProcessingId(id);
-      await api.post(`/finance/procurement/${id}/reject`, { reason });
+      await api.put(`/finance/procurement/${id}/reject`, { rejectionReason: reason });
       showSuccess('Pengadaan ditolak');
       fetchRequests();
     } catch (err) {

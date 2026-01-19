@@ -251,9 +251,24 @@ export default function PeriodsPage() {
                           {new Date(period.startDate).toLocaleDateString('id-ID', { month: 'short', year: 'numeric' })} - {new Date(period.endDate).toLocaleDateString('id-ID', { month: 'short', year: 'numeric' })}
                         </span>
                       </div>
-                    </div>
-                  </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-3 gap-2 pt-2">
+                        <div className="flex flex-col items-center bg-blue-500/5 p-2 rounded-lg border border-blue-500/10">
+                          <span className="text-lg font-bold text-blue-600 dark:text-blue-400">{period.totalMembers || 0}</span>
+                          <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Members</span>
+                        </div>
+                        <div className="flex flex-col items-center bg-purple-500/5 p-2 rounded-lg border border-purple-500/10">
+                          <span className="text-lg font-bold text-purple-600 dark:text-purple-400">{period.totalProjects || 0}</span>
+                          <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Proyek</span>
+                        </div>
+                        <div className="flex flex-col items-center bg-orange-500/5 p-2 rounded-lg border border-orange-500/10">
+                          <span className="text-lg font-bold text-orange-600 dark:text-orange-400">{period.totalEvents || 0}</span>
+                          <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Kegiatan</span>
+                        </div>
+                      </div>
                 </div>
+              </div>
 
                 {/* Actions (ONLY VIEW MODE FOR NON-ADMIN) */}
                 <div className="pt-4 border-t border-border mt-4">

@@ -208,9 +208,12 @@ export default function EventsPage() {
            )}
            {isAdmin && (
              <>
-               <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/events/${item.id}`); }}>
-                 Edit
-               </Button>
+               {/* Hide Edit for COMPLETED or CANCELLED */}
+               {!['COMPLETED', 'CANCELLED'].includes(item.status) && (
+                 <Button size="sm" variant="ghost" onClick={(e) => { e.stopPropagation(); router.push(`/dashboard/events/${item.id}`); }}>
+                   Edit
+                 </Button>
+               )}
                <Button size="sm" variant="danger" onClick={(e) => { e.stopPropagation(); handleDeleteClick(item); }}>
                  Hapus
                </Button>
@@ -482,11 +485,13 @@ export default function EventsPage() {
       )}
 
       {/* MODALS & TOASTS */}
-      <EventDetailModal
-         isOpen={!!selectedEvent}
-         onClose={() => setSelectedEvent(null)}
-         event={selectedEvent}
-      />
+      {selectedEvent && (
+        <EventDetailModal
+           isOpen={!!selectedEvent}
+           onClose={() => setSelectedEvent(null)}
+           event={selectedEvent}
+        />
+      )}
 
       <Modal
         isOpen={deleteModal.isOpen}

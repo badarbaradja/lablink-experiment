@@ -45,8 +45,7 @@ export default function CreateDuesModal({ isOpen, onClose, onSuccess }: CreateDu
       const payload = {
           paymentMonth: Number(formData.paymentMonth),
           paymentYear: Number(formData.paymentYear),
-          amount: Number(formData.amount),
-          periodId: 'PERIOD-001' // HARDCODED TEMPORARILY - Should use active period
+          amount: Number(formData.amount)
       };
 
       const formDataObj = new FormData();

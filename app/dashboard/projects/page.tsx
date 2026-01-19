@@ -200,16 +200,24 @@ export default function ProjectsPage() {
           )}
           {isAdmin && (
             <>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  router.push(`/dashboard/projects/${item.id}`);
-                }}
-              >
-                Edit
-              </Button>
+              {isAdmin && item.approvalStatus === 'PENDING' && (
+               <Button
+                 size="sm"
+                 variant="ghost"
+                 onClick={(e) => {
+                   e.stopPropagation();
+                   router.push(`/dashboard/projects/${item.id}`);
+                 }}
+               >
+                 Edit
+               </Button>
+              )}
+              {isAdmin && item.approvalStatus !== 'PENDING' && (
+                 // Allow Edit only if NOT Rejected/Approved? Or maybe just hide it? 
+                 // User specifically asked about Rejected.
+                 // Let's hide it for REJECTED and APPROVED.
+                 null
+              )}
               <Button
                 size="sm"
                 variant="danger"
