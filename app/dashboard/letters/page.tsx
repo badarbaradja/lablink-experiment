@@ -13,6 +13,8 @@ import LetterDetailModal from '@/app/components/letters/LetterDetailModal';
 import Modal from '@/app/components/ui/Modal';
 import Toast from '@/app/components/ui/Toast';
 import { useToast } from '@/app/hooks/useToast';
+// IMPORT ANIMASI
+import { PageWrapper, AnimatedSection } from '@/app/components/ui/PageAnimation';
 
 const TYPE_LABELS: Record<string, string> = {
   PMJ: 'Peminjaman',
@@ -326,18 +328,21 @@ export default function LettersPage() {
   ];
 
   return (
-    <>
-      <div className="flex justify-between items-center mb-6">
+    // WRAPPER UTAMA: Mengatur spacing dan animasi container
+    <PageWrapper className="space-y-6 pb-10">
+      
+      {/* SECTION 1: Header (Muncul Pertama) */}
+      <AnimatedSection className="flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Surat / Administrasi</h1>
         </div>
         <Button onClick={() => router.push('/dashboard/letters/new')}>
           + Buat Surat
         </Button>
-      </div>
+      </AnimatedSection>
 
-      {/* Tabs */}
-      <div className="flex space-x-4 mb-6 border-b border-border">
+      {/* SECTION 2: Tabs (Muncul Kedua) */}
+      <AnimatedSection className="flex space-x-4 border-b border-border">
         <button
           onClick={() => setActiveTab('outgoing')}
           className={`pb-2 px-4 transition-colors ${
@@ -358,80 +363,84 @@ export default function LettersPage() {
         >
           📥 Surat Masuk
         </button>
-      </div>
+      </AnimatedSection>
 
-      {activeTab === 'outgoing' ? (
-        <Card>
-          <div className="flex flex-col md:flex-row gap-4 mb-6">
-            <div className="flex-1">
-              <input
-                type="text"
-                placeholder="Cari nomor / perihal / pemohon..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full px-4 py-2.5 text-sm bg-input border border-input text-foreground rounded-xl focus:outline-none focus:ring-2 focus:ring-primary transition-all duration-200 placeholder:text-muted-foreground"
-              />
+      {/* SECTION 3: Content Card (Muncul Ketiga) */}
+      <AnimatedSection>
+        {activeTab === 'outgoing' ? (
+          <Card>
+            <div className="flex flex-col md:flex-row gap-4 mb-6">
+              <div className="flex-1">
+                <input
+                  type="text"
+                  placeholder="Cari nomor / perihal / pemohon..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full px-4 py-2.5 text-sm bg-input border border-input text-foreground rounded-xl focus:outline-none focus:ring-2 focus:ring-primary transition-all duration-200 placeholder:text-muted-foreground"
+                />
+              </div>
+              <div className="w-full md:w-48">
+                <Select
+                  value={filterType}
+                  onChange={(e) => setFilterType(e.target.value)}
+                  options={[
+                    { value: 'ALL', label: 'Semua Jenis' },
+                    { value: 'PMJ', label: 'Peminjaman' },
+                    { value: 'IZN', label: 'Izin' },
+                    { value: 'STF', label: 'Sertifikat' },
+                    { value: 'SP', label: 'Surat Pengantar' },
+                    { value: 'UND', label: 'Undangan' },
+                  ]}
+                />
+              </div>
+              <div className="w-full md:w-48">
+                <Select
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                  options={[
+                    { value: 'ALL', label: 'Semua Status' },
+                    { value: 'PENDING', label: 'Menunggu' },
+                    { value: 'APPROVED', label: 'Disetujui' },
+                    { value: 'REJECTED', label: 'Ditolak' },
+                  ]}
+                />
+              </div>
+              <div className="w-full md:w-48">
+                <Select
+                  value={sortConfig}
+                  onChange={(e) => setSortConfig(e.target.value)}
+                  options={[
+                    { value: 'newest', label: 'Terbaru' },
+                    { value: 'oldest', label: 'Terlama' },
+                  ]}
+                />
+              </div>
             </div>
-            <div className="w-full md:w-48">
-              <Select
-                value={filterType}
-                onChange={(e) => setFilterType(e.target.value)}
-                options={[
-                  { value: 'ALL', label: 'Semua Jenis' },
-                  { value: 'PMJ', label: 'Peminjaman' },
-                  { value: 'IZN', label: 'Izin' },
-                  { value: 'STF', label: 'Sertifikat' },
-                  { value: 'SP', label: 'Surat Pengantar' },
-                  { value: 'UND', label: 'Undangan' },
-                ]}
-              />
-            </div>
-            <div className="w-full md:w-48">
-              <Select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                options={[
-                  { value: 'ALL', label: 'Semua Status' },
-                  { value: 'PENDING', label: 'Menunggu' },
-                  { value: 'APPROVED', label: 'Disetujui' },
-                  { value: 'REJECTED', label: 'Ditolak' },
-                ]}
-              />
-            </div>
-            <div className="w-full md:w-48">
-              <Select
-                value={sortConfig}
-                onChange={(e) => setSortConfig(e.target.value)}
-                options={[
-                  { value: 'newest', label: 'Terbaru' },
-                  { value: 'oldest', label: 'Terlama' },
-                ]}
-              />
-            </div>
-          </div>
 
-          {isLoading ? (
-            <div className="text-center py-8 text-muted-foreground">Memuat...</div>
-          ) : error ? (
-            <div className="text-center py-8 text-red-500">{error}</div>
-          ) : filteredLetters.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">Tidak ada surat</div>
-          ) : (
-            <Table data={filteredLetters} columns={outgoingColumns} keyField="id" />
-          )}
-        </Card>
-      ) : (
-        <Card>
-          {isLoadingIncoming ? (
-            <div className="text-center py-8 text-muted-foreground">Memuat...</div>
-          ) : incomingLetters.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">Tidak ada surat masuk</div>
-          ) : (
-            <Table data={incomingLetters} columns={incomingColumns} keyField="id" />
-          )}
-        </Card>
-      )}
+            {isLoading ? (
+              <div className="text-center py-8 text-muted-foreground">Memuat...</div>
+            ) : error ? (
+              <div className="text-center py-8 text-red-500">{error}</div>
+            ) : filteredLetters.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">Tidak ada surat</div>
+            ) : (
+              <Table data={filteredLetters} columns={outgoingColumns} keyField="id" />
+            )}
+          </Card>
+        ) : (
+          <Card>
+            {isLoadingIncoming ? (
+              <div className="text-center py-8 text-muted-foreground">Memuat...</div>
+            ) : incomingLetters.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">Tidak ada surat masuk</div>
+            ) : (
+              <Table data={incomingLetters} columns={incomingColumns} keyField="id" />
+            )}
+          </Card>
+        )}
+      </AnimatedSection>
 
+      {/* Modals (Tanpa animasi entry karena dikontrol state terpisah) */}
       {selectedLetter && (
         <LetterDetailModal
           isOpen={!!selectedLetter}
@@ -461,6 +470,6 @@ export default function LettersPage() {
           onClose={() => removeToast(toast.id)}
         />
       ))}
-    </>
+    </PageWrapper>
   );
 }

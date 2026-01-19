@@ -1,10 +1,20 @@
-// API Response types
+// ==========================================
+// 1. API RESPONSE WRAPPER
+// ==========================================
 export interface ApiResponse<T> {
   data: T;
   message?: string;
+  meta?: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
 }
 
-// Auth
+// ==========================================
+// 2. AUTH & USER
+// ==========================================
 export interface LoginRequest {
   username: string;
   password: string;
@@ -19,14 +29,16 @@ export interface User {
   id: string;
   username: string;
   fullName: string;
-  role: string;
+  role: 'ADMIN' | 'ASSISTANT' | 'MEMBER';
   isPasswordChanged: boolean;
 }
 
-// Member
+// ==========================================
+// 3. MEMBER
+// ==========================================
 export interface Member {
   id: string;
-  username: string;
+  username: string; // NIM
   fullName: string;
   role: string;
   expertDivision: string;
@@ -56,11 +68,13 @@ export interface UpdateMemberRequest {
   socialMediaLink?: string;
 }
 
-// Dashboard
-export interface DashboardSummary {
-  statistics: Statistics;
-  upcomingDeadlines: UpcomingItem[];
-  recentActivities: RecentActivity[];
+// ==========================================
+// 4. DASHBOARD & STATISTICS
+// ==========================================
+export interface MonthlyStat {
+  name: string; // Misal: "Jan", "Feb"
+  projects: number;
+  events: number;
 }
 
 export interface Statistics {
@@ -77,24 +91,36 @@ export interface Statistics {
 }
 
 export interface UpcomingItem {
-  type: string;
+  type: 'PROJECT' | 'EVENT';
   id: string;
   code: string;
   name: string;
-  deadline: string;
+  deadline: string; // Tanggal deadline/event
   daysRemaining: number;
 }
 
-export interface RecentActivity {
-  action: string;
-  targetType: string;
+// Tipe data untuk Activity Log (Dipakai di Dashboard & Halaman Log)
+export interface ActivityLog {
+  id: string;
+  action: 'CREATE' | 'UPDATE' | 'DELETE' | 'APPROVE' | 'REJECT' | string;
+  targetType: 'MEMBER' | 'PROJECT' | 'EVENT' | 'LETTER' | 'ARCHIVE' | string;
   targetName: string;
   userName: string;
   timestamp: string;
-  timeAgo: string;
+  details?: string;
+  timeAgo?: string; // Helper field dari Backend/Frontend
 }
 
-// Period
+export interface DashboardSummary {
+  statistics: Statistics;
+  upcomingDeadlines: UpcomingItem[];
+  recentActivities: ActivityLog[]; // Menggunakan interface ActivityLog standar
+  monthlyStats: MonthlyStat[];
+}
+
+// ==========================================
+// 5. PERIOD (PERIODE KEPENGURUSAN)
+// ==========================================
 export interface Period {
   id: string;
   code: string;
@@ -103,9 +129,12 @@ export interface Period {
   endDate: string;
   isActive: boolean;
   isArchived: boolean;
+  createdAt?: string;
 }
 
-// Project
+// ==========================================
+// 6. PROJECT
+// ==========================================
 export interface MemberSummary {
   id: string;
   username: string;
@@ -119,9 +148,9 @@ export interface Project {
   name: string;
   division: string;
   activityType: string;
-  status: string;
-  startDate?: string;
-  endDate?: string;
+  status: 'PLANNED' | 'ONGOING' | 'COMPLETED' | 'CANCELLED' | string;
+  startDate?: string; // Bisa null jika belum mulai
+  endDate?: string;   // Bisa null (Deadline)
   description?: string;
   progressPercent: number;
   leader: MemberSummary;
@@ -156,7 +185,9 @@ export interface UpdateProjectRequest {
   teamMemberIds?: string[];
 }
 
-// Event
+// ==========================================
+// 7. EVENT (KEGIATAN)
+// ==========================================
 export interface CommitteeMember {
   memberId: string;
   username: string;
@@ -171,8 +202,11 @@ export interface Event {
   description: string;
   startDate: string;
   endDate: string;
-  status: string;
-  pic: MemberSummary;
+  status: 'PLANNED' | 'ONGOING' | 'COMPLETED' | 'CANCELLED' | string;
+  eventType: string; // WORKSHOP, SEMINAR, TRAINING, etc.
+  location: string;  // <--- ADDED: Lokasi kegiatan
+  pic: MemberSummary; // Person In Charge
+  picName?: string;  // Optional helper jika API meratakan object
   committee: CommitteeMember[];
   createdAt: string;
   updatedAt: string;
@@ -183,6 +217,8 @@ export interface CreateEventRequest {
   description: string;
   startDate: string;
   endDate: string;
+  eventType: string;
+  location: string;
   picId: string;
 }
 
@@ -191,12 +227,16 @@ export interface UpdateEventRequest {
   description?: string;
   startDate?: string;
   endDate?: string;
+  eventType?: string;
+  location?: string;
   status?: string;
   picId?: string;
   committee?: { memberId: string; role: string }[];
 }
 
-// Archive
+// ==========================================
+// 8. ARCHIVE (ARSIP)
+// ==========================================
 export interface ArchiveSource {
   id: string;
   code: string;
@@ -209,11 +249,11 @@ export interface Archive {
   archiveCode: string;
   title: string;
   description: string;
-  archiveType: string;
+  archiveType: string; // DOCUMENT, SOFTWARE, MEDIA
   department: string;
-  sourceType: string;
+  sourceType: 'PROJECT' | 'EVENT' | 'OTHER';
   source: ArchiveSource;
-  publishLocation: string;
+  publishLocation: string; // Link GDrive / Physical Location
   referenceNumber: string;
   publishDate: string;
   createdAt: string;
@@ -240,7 +280,9 @@ export interface UpdateArchiveRequest {
   publishDate?: string;
 }
 
-// Letter (Surat)
+// ==========================================
+// 9. LETTER (PERSURATAN)
+// ==========================================
 export interface LetterEventSummary {
   id: string;
   eventCode: string;
@@ -250,8 +292,8 @@ export interface LetterEventSummary {
 export interface Letter {
   id: string;
   letterNumber: string | null;  // null until approved
-  letterType: string;
-  category: string;
+  letterType: string; // INVITATION, PERMISSION, BORROWING
+  category: string;   // INTERNAL, EXTERNAL
   subject: string;
   recipient: string;
   content: string;
@@ -261,19 +303,19 @@ export interface Letter {
   requesterName: string;
   requesterNim: string;
   
-  // Borrow date and Return Date
-  borrowDate: string;
-  borrowReturnDate: string;
+  // Borrowing specifics
+  borrowDate?: string;
+  borrowReturnDate?: string;
   
   // Dates
   issueDate: string | null;  // Set on approval
   
-  // Status: PENDING, APPROVED, REJECTED
-  status: string;
+  // Status
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
   
   // Approval info
-  approvedBy: string;
-  rejectionReason: string;
+  approvedBy?: string;
+  rejectionReason?: string;
   
   event?: LetterEventSummary;
   createdAt: string;

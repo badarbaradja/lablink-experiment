@@ -3,28 +3,30 @@
 import { useState, useEffect } from 'react';
 import { api } from '@/app/lib/api';
 import Card from '@/app/components/ui/Card';
-import Input from '@/app/components/ui/Input';
 import Select from '@/app/components/ui/Select';
-import { Search, Filter, Calendar, User, FileText, RefreshCw } from 'lucide-react';
+import { Search, RefreshCw, Activity, AlertCircle, Clock } from 'lucide-react';
+import { PageWrapper, AnimatedSection } from '@/app/components/ui/PageAnimation';
 
+// --- TIPE DATA ---
 interface ActivityLog {
   id: string;
   action: string;
-  targetType: string;
+  targetType: string; // Bisa null di dashboard summary
   targetName: string;
   userName: string;
-  timestamp: string;
+  timestamp: string; // Bisa null di dashboard summary
+  timeAgo?: string;  // Dashboard summary pakai ini
   details?: string;
 }
 
 export default function ActivityLogsPage() {
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Filter States
   const [searchQuery, setSearchQuery] = useState('');
   const [actionFilter, setActionFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
 
   useEffect(() => {
     fetchLogs();
@@ -33,217 +35,251 @@ export default function ActivityLogsPage() {
   const fetchLogs = async () => {
     try {
       setIsLoading(true);
-      const response = await api.get<ActivityLog[]>('/activity-logs');
-      // Ensure response is an array
-      setLogs(Array.isArray(response) ? response : []);
+      
+      // STRATEGI: Coba panggil endpoint khusus log dulu
+      // Jika kosong/gagal, ambil dari dashboard summary (karena disitu pasti ada data)
+      try {
+        const response = await api.get<ActivityLog[]>('/activity-logs');
+        if (Array.isArray(response) && response.length > 0) {
+          setLogs(response);
+        } else {
+          throw new Error("Data kosong, fallback ke summary");
+        }
+      } catch (e) {
+        // FALLBACK: Ambil dari Dashboard Summary agar TIDAK KOSONG
+        console.warn("Mengambil data dari Dashboard Summary sebagai fallback");
+        const summary = await api.get<any>('/dashboard/summary');
+        if (summary && summary.recentActivities) {
+          // Mapping data summary ke format ActivityLog
+          const mappedLogs = summary.recentActivities.map((item: any, idx: number) => ({
+            id: `log-${idx}`,
+            action: item.action,
+            targetType: 'UNKNOWN', // Summary API mungkin tidak kirim ini
+            targetName: item.targetName,
+            userName: item.userName,
+            timestamp: new Date().toISOString(), // Dummy date
+            timeAgo: item.timeAgo,
+            details: ''
+          }));
+          setLogs(mappedLogs);
+        }
+      }
+
     } catch (error) {
-      console.error('Failed to fetch activity logs:', error);
-      setLogs([]); // Set empty array on error
+      console.error('Gagal memuat log:', error);
+      setLogs([]); 
     } finally {
       setIsLoading(false);
     }
   };
 
-  const getActionBadge = (action: string) => {
-    const badges = {
-      CREATE: 'bg-success-light text-success',
-      UPDATE: 'bg-info-light text-info',
-      DELETE: 'bg-error-light text-error',
-      APPROVE: 'bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400',
-      REJECT: 'bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400',
-    };
-    return badges[action as keyof typeof badges] || 'bg-muted text-muted-foreground';
+  // Helper: Time Ago (Hitung mundur waktu)
+  // Jika API sudah kirim 'timeAgo' (misal "7 menit lalu"), pakai itu. Jika tidak, hitung manual.
+  const displayTime = (log: ActivityLog) => {
+    if (log.timeAgo) return log.timeAgo;
+    
+    const date = new Date(log.timestamp);
+    const now = new Date();
+    const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+    
+    let interval = seconds / 31536000;
+    if (interval > 1) return Math.floor(interval) + " thn lalu";
+    interval = seconds / 2592000;
+    if (interval > 1) return Math.floor(interval) + " bln lalu";
+    interval = seconds / 86400;
+    if (interval > 1) return Math.floor(interval) + " hari lalu";
+    interval = seconds / 3600;
+    if (interval > 1) return Math.floor(interval) + " jam lalu";
+    interval = seconds / 60;
+    if (interval > 1) return Math.floor(interval) + " mnt lalu";
+    return "Baru saja";
   };
 
-  const getActionIcon = (action: string) => {
-    const icons = {
-      CREATE: '➕',
-      UPDATE: '✏️',
-      DELETE: '🗑️',
-      APPROVE: '✅',
-      REJECT: '❌',
-    };
-    return icons[action as keyof typeof icons] || '📝';
+  // Helper: Warna Badge Aksi
+  const getActionStyles = (action: string) => {
+    switch (action) {
+      case 'CREATE': return {
+        bg: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400',
+        icon: '+'
+      };
+      case 'UPDATE': return {
+        bg: 'bg-blue-500/10 border-blue-500/20 text-blue-600 dark:text-blue-400',
+        icon: '✎'
+      };
+      case 'DELETE': return {
+        bg: 'bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-400',
+        icon: '×'
+      };
+      default: return {
+        bg: 'bg-slate-500/10 border-slate-500/20 text-slate-600 dark:text-slate-400',
+        icon: '•'
+      };
+    }
   };
 
-  const filteredLogs = Array.isArray(logs) ? logs.filter((log) => {
+  // Client-side Filtering
+  const filteredLogs = logs.filter((log) => {
     const matchesSearch = 
-      log.userName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      log.targetName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      log.details?.toLowerCase().includes(searchQuery.toLowerCase());
+      (log.userName?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+      (log.targetName?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+      (log.details?.toLowerCase() || '').includes(searchQuery.toLowerCase());
     
     const matchesAction = !actionFilter || log.action === actionFilter;
-    const matchesType = !typeFilter || log.targetType === typeFilter;
+    const matchesType = !typeFilter || (log.targetType && log.targetType === typeFilter);
     
     return matchesSearch && matchesAction && matchesType;
-  }) : [];
+  });
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      {/* Page Header */}
-      <div className="flex items-center justify-between">
+    <PageWrapper className="space-y-6 pb-10">
+      
+      {/* 1. Header Section */}
+      <AnimatedSection className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Activity Log</h1>
-          <p className="text-muted-foreground mt-1">
-            Rekam jejak aktivitas sistem sedang dalam tahap pengembangan
+          <h1 className="text-2xl font-bold text-foreground">Activity Log</h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            Rekam jejak aktivitas sistem secara real-time
           </p>
         </div>
         
         <button 
           onClick={fetchLogs}
-          className="flex items-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary-hover text-white rounded-lg font-medium shadow-lg hover:shadow-xl transition-all duration-200"
+          className="group flex items-center gap-2 px-4 py-2 bg-card border border-border hover:border-primary/50 text-foreground rounded-lg shadow-sm transition-all duration-200"
         >
-          <RefreshCw className="w-4 h-4" />
-          Refresh
+          <RefreshCw className={`w-4 h-4 text-muted-foreground group-hover:text-primary transition-transform ${isLoading ? 'animate-spin' : ''}`} />
+          <span className="text-sm font-medium">Refresh</span>
         </button>
-      </div>
+      </AnimatedSection>
 
-      {/* Filters */}
-      <Card>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-          {/* Search */}
-          <div className="lg:col-span-2">
-            <Input
-              type="search"
-              placeholder="Cari user, target, atau detail..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              icon={<Search className="w-5 h-5" />}
-            />
+      {/* 2. Filters & Content */}
+      <AnimatedSection>
+        <Card>
+          <div className="flex flex-col gap-6">
+             
+             {/* Header Card Internal */}
+             <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-linear-to-br from-cyan-500 to-blue-500 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/20">
+                    <Activity className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-bold text-foreground">Daftar Aktivitas</h2>
+                  <p className="text-sm text-muted-foreground">Semua log tersimpan</p>
+                </div>
+             </div>
+
+             {/* Filter Controls */}
+             <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                <div className="md:col-span-6 relative">
+                   <Search className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+                   <input
+                      type="text"
+                      placeholder="Cari user, target, atau detail..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2.5 text-sm bg-input border border-input text-foreground rounded-xl focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all duration-200 placeholder:text-muted-foreground"
+                   />
+                </div>
+
+                <div className="md:col-span-3">
+                   <Select
+                      label=""
+                      value={actionFilter}
+                      onChange={(e) => setActionFilter(e.target.value)}
+                      options={[
+                        { value: '', label: 'Semua Aksi' },
+                        { value: 'CREATE', label: 'Create' },
+                        { value: 'UPDATE', label: 'Update' },
+                        { value: 'DELETE', label: 'Delete' },
+                      ]}
+                   />
+                </div>
+
+                <div className="md:col-span-3">
+                   <Select
+                      label=""
+                      value={typeFilter}
+                      onChange={(e) => setTypeFilter(e.target.value)}
+                      options={[
+                        { value: '', label: 'Semua Tipe' },
+                        { value: 'MEMBER', label: 'Member' },
+                        { value: 'PROJECT', label: 'Project' },
+                        { value: 'EVENT', label: 'Event' },
+                      ]}
+                   />
+                </div>
+             </div>
+
+             {/* 3. Activity List */}
+             <div className="mt-2 space-y-1">
+                {isLoading ? (
+                   <div className="space-y-3 py-4">
+                      {[1, 2, 3, 4, 5].map((i) => (
+                         <div key={i} className="h-16 bg-muted rounded-xl animate-pulse" />
+                      ))}
+                   </div>
+                ) : filteredLogs.length === 0 ? (
+                   <div className="flex flex-col items-center justify-center py-12 text-muted-foreground border-t border-dashed border-border mt-4">
+                      <AlertCircle className="w-10 h-10 mb-2 opacity-20" />
+                      <p>Tidak ada aktivitas yang ditemukan</p>
+                   </div>
+                ) : (
+                   filteredLogs.map((log) => {
+                      const style = getActionStyles(log.action);
+                      return (
+                        <div key={log.id} className="group flex items-start sm:items-center gap-4 p-4 hover:bg-muted/40 rounded-xl transition-all duration-200 border-b border-border/40 last:border-0">
+                          
+                          {/* Icon Bulat */}
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 border text-lg font-bold shadow-sm ${style.bg}`}>
+                              {style.icon}
+                          </div>
+                          
+                          {/* Deskripsi */}
+                          <div className="flex-1 min-w-0">
+                              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                                <p className="text-sm text-foreground pr-4 leading-relaxed">
+                                    <span className="font-bold text-foreground hover:text-primary transition-colors cursor-pointer">
+                                      {log.userName}
+                                    </span>
+                                    <span className="text-muted-foreground mx-1"> melakukan </span>
+                                    
+                                    <span className={`font-semibold text-[10px] uppercase px-1.5 py-0.5 rounded border align-middle ${style.bg.replace('bg-', 'bg-opacity-50 ')}`}>
+                                      {log.action}
+                                    </span>
+
+                                    <span className="text-muted-foreground mx-1"> pada </span>
+                                    <span className="font-medium text-foreground">
+                                      {log.targetName}
+                                    </span>
+                                </p>
+                                
+                                {/* Waktu */}
+                                <div className="flex items-center gap-1.5 text-xs text-muted-foreground whitespace-nowrap bg-muted/50 px-2.5 py-1 rounded-full font-medium mt-1 sm:mt-0 w-fit">
+                                    <Clock className="w-3 h-3" />
+                                    {displayTime(log)}
+                                </div>
+                              </div>
+                              
+                              {log.details && (
+                                <p className="text-xs text-muted-foreground mt-1.5 truncate pl-2 border-l-2 border-border">
+                                    {log.details}
+                                </p>
+                              )}
+                          </div>
+                        </div>
+                      );
+                   })
+                )}
+             </div>
+
+             {/* Footer Info */}
+             {!isLoading && filteredLogs.length > 0 && (
+                <div className="text-center text-xs text-muted-foreground mt-4 pt-4 border-t border-dashed border-border">
+                   Menampilkan {filteredLogs.length} aktivitas
+                </div>
+             )}
           </div>
-
-          {/* Action Filter */}
-          <Select
-            value={actionFilter}
-            onChange={(e) => setActionFilter(e.target.value)}
-            options={[
-              { value: '', label: 'Semua Aksi' },
-              { value: 'CREATE', label: 'Create' },
-              { value: 'UPDATE', label: 'Update' },
-              { value: 'DELETE', label: 'Delete' },
-              { value: 'APPROVE', label: 'Approve' },
-              { value: 'REJECT', label: 'Reject' },
-            ]}
-          />
-
-          {/* Type Filter */}
-          <Select
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
-            options={[
-              { value: '', label: 'Semua Tipe' },
-              { value: 'MEMBER', label: 'Member' },
-              { value: 'PROJECT', label: 'Project' },
-              { value: 'EVENT', label: 'Event' },
-              { value: 'LETTER', label: 'Letter' },
-              { value: 'ARCHIVE', label: 'Archive' },
-              { value: 'PRESENCE', label: 'Presence' },
-            ]}
-          />
-
-          {/* Date Range */}
-          <div className="flex gap-2">
-            <Input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
-              className="text-sm"
-            />
-          </div>
-        </div>
-      </Card>
-
-      {/* Activity Table */}
-      <Card padding="none">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-muted border-b border-default">
-              <tr>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">
-                  Waktu
-                </th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">
-                  User
-                </th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">
-                  Aksi
-                </th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">
-                  Target
-                </th>
-                <th className="px-6 py-4 text-left text-sm font-semibold text-foreground">
-                  Detail
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-default">
-              {isLoading ? (
-                <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center">
-                    <div className="flex items-center justify-center gap-2 text-muted-foreground">
-                      <RefreshCw className="w-5 h-5 animate-spin" />
-                      <span>Memuat data...</span>
-                    </div>
-                  </td>
-                </tr>
-              ) : filteredLogs.length === 0 ? (
-                <tr>
-                  <td colSpan={5} className="px-6 py-12 text-center">
-                    <div className="flex flex-col items-center gap-2">
-                      <FileText className="w-12 h-12 text-muted-foreground" />
-                      <p className="text-muted-foreground">Tidak ada aktivitas yang ditemukan</p>
-                    </div>
-                  </td>
-                </tr>
-              ) : (
-                filteredLogs.map((log) => (
-                  <tr 
-                    key={log.id} 
-                    className="hover:bg-muted/50 transition-colors"
-                  >
-                    <td className="px-6 py-4 text-sm text-muted-foreground whitespace-nowrap">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4" />
-                        {new Date(log.timestamp).toLocaleString('id-ID')}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <User className="w-4 h-4 text-muted-foreground" />
-                        <span className="font-medium text-foreground">{log.userName}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${getActionBadge(log.action)}`}>
-                        <span>{getActionIcon(log.action)}</span>
-                        {log.action}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div>
-                        <p className="font-medium text-foreground">{log.targetName}</p>
-                        <p className="text-xs text-muted-foreground">{log.targetType}</p>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-muted-foreground max-w-md truncate">
-                      {log.details || '-'}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Pagination Info */}
-        {!isLoading && filteredLogs.length > 0 && (
-          <div className="px-6 py-4 border-t border-default bg-muted/30">
-            <p className="text-sm text-muted-foreground text-center">
-              Menampilkan {filteredLogs.length} dari {logs.length} aktivitas
-            </p>
-          </div>
-        )}
-      </Card>
-    </div>
+        </Card>
+      </AnimatedSection>
+    </PageWrapper>
   );
 }

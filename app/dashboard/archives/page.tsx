@@ -12,6 +12,8 @@ import ArchiveDetailModal from '@/app/components/archives/ArchiveDetailModal';
 import Modal from '@/app/components/ui/Modal';
 import Toast from '@/app/components/ui/Toast';
 import { useToast } from '@/app/hooks/useToast';
+// IMPORT ANIMASI
+import { PageWrapper, AnimatedSection } from '@/app/components/ui/PageAnimation';
 
 export default function ArchivesPage() {
   const { isAdmin } = useAuth();
@@ -122,7 +124,7 @@ export default function ArchivesPage() {
       key: 'source',
       header: 'Nama Sumber',
       render: (item: Archive) => (
-        <span className="text-sm font-medium text-blue-600 dark:text-blue-400 truncate max-w-[150px] block" title={item.source?.name}>
+        <span className="text-sm font-medium text-blue-600 dark:text-blue-400 truncate max-w-37.5 block" title={item.source?.name}>
           {item.source?.name || '-'}
         </span>
       ),
@@ -178,13 +180,17 @@ export default function ArchivesPage() {
     );
   }
 
+  // --- IMPLEMENTASI ANIMASI ---
   return (
-    <>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-foreground">Archives / Arsip</h1>
-        </div>
+    <PageWrapper className="space-y-6 pb-10">
+      
+      {/* 1. Header Section - Muncul Pertama */}
+      <AnimatedSection className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-foreground">Archives / Arsip</h1>
+      </AnimatedSection>
 
+      {/* 2. Content Section (Card) - Muncul Kedua */}
+      <AnimatedSection>
         <Card>
           <div className="flex flex-col md:flex-row gap-4 mb-6">
             <div className="flex-1">
@@ -246,8 +252,9 @@ export default function ArchivesPage() {
             emptyMessage="Belum ada arsip."
           />
         </Card>
-      </div>
+      </AnimatedSection>
 
+      {/* Modals & Toasts (Tidak dianimasi karena overlay/pop-up) */}
       <ArchiveDetailModal
         isOpen={!!selectedArchive}
         onClose={() => setSelectedArchive(null)}
@@ -281,6 +288,6 @@ export default function ArchivesPage() {
           onClose={() => removeToast(toast.id)}
         />
       ))}
-    </>
+    </PageWrapper>
   );
 }

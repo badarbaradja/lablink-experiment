@@ -12,11 +12,13 @@ import Select from '@/app/components/ui/Select';
 import Toast from '@/app/components/ui/Toast';
 import { useToast } from '@/app/hooks/useToast';
 import { EXPERT_DIVISIONS, DEPARTMENTS } from '@/app/lib/constants';
-import { User, Lock, Mail, Phone, Link as LinkIcon, Briefcase, Building } from 'lucide-react';
+import { User, Lock, Mail, Phone, Link as LinkIcon, Briefcase, Building, ShieldAlert } from 'lucide-react';
+// IMPORT ANIMASI
+import { PageWrapper, AnimatedSection } from '@/app/components/ui/PageAnimation';
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { user, logout, login } = useAuth();
+  const { user, logout } = useAuth();
   const [memberData, setMemberData] = useState<Member | null>(null);
   const [isLoadingProfile, setIsLoadingProfile] = useState(false);
   const [isLoadingPassword, setIsLoadingPassword] = useState(false);
@@ -54,12 +56,6 @@ export default function ProfilePage() {
         expertDivision: data.expertDivision || '',
         department: data.department || '',
       });
-      
-      // IMPORTANT: Update AuthContext with latest isPasswordChanged status
-      if (user && data.isPasswordChanged !== user.isPasswordChanged) {
-        const updatedUser = { ...user, isPasswordChanged: data.isPasswordChanged };
-        login(localStorage.getItem('token') || '', updatedUser);
-      }
     } catch (err) {
       showError('Gagal memuat data profile');
     }
@@ -75,12 +71,11 @@ export default function ProfilePage() {
 
   const handleProfileSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     try {
       setIsLoadingProfile(true);
       await api.put('/auth/profile', profileForm);
       success('Profile berhasil diperbarui!');
-      fetchMemberData(); // Reload data
+      fetchMemberData(); 
     } catch (err) {
       showError(err instanceof Error ? err.message : 'Gagal memperbarui profile');
     } finally {
@@ -110,7 +105,6 @@ export default function ProfilePage() {
       
       success('Password berhasil diubah! Silakan login kembali');
       
-      // Logout after 2 seconds
       setTimeout(() => {
         logout();
         router.push('/login');
@@ -122,199 +116,178 @@ export default function ProfilePage() {
     }
   };
 
-  if (!user) {
-    return null;
-  }
+  if (!user) return null;
 
   const mustChangePassword = !user.isPasswordChanged;
 
   return (
-    <>
-      <div className="space-y-6">
-        {/* Warning Banner for First-Time Users */}
-        {mustChangePassword && (
-          <div className="bg-red-50 border-2 border-red-500 rounded-2xl p-6 shadow-xl">
-            <div className="flex items-center gap-3 mb-2">
-              <div className="w-12 h-12 bg-red-500 rounded-full flex items-center justify-center">
-                <span className="text-2xl">⚠️</span>
-              </div>
-              <div>
-                <h2 className="text-lg font-bold text-red-900">WAJIB Ganti Password!</h2>
-                <p className="text-sm text-red-700">Anda harus mengganti password default untuk keamanan akun</p>
-              </div>
-            </div>
-          </div>
-        )}
-        {/* Header */}
-        <div className="bg-gradient from-purple-600 to-pink-600 rounded-2xl p-8 shadow-2xl text-white">
-          <div className="flex items-center gap-4 mb-4">
-            <div className="w-20 h-20 rounded-full bg-white/20 backdrop-blur flex items-center justify-center font-bold text-3xl border-4 border-white/30">
-              {user.fullName?.charAt(0) || 'U'}
+    <PageWrapper className="space-y-8 pb-10">
+      
+      {/* 1. Warning Banner (Jika Belum Ganti Password) */}
+      {mustChangePassword && (
+        <AnimatedSection>
+          <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4 flex items-center gap-4 shadow-sm">
+            <div className="w-10 h-10 bg-red-500/20 rounded-full flex items-center justify-center shrink-0 text-red-600 dark:text-red-400">
+              <ShieldAlert className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold">{user.fullName}</h1>
-              <p className="text-purple-100">@{user.username}</p>
+              <h2 className="text-sm font-bold text-red-700 dark:text-red-400 uppercase tracking-wide">Penting: Keamanan Akun</h2>
+              <p className="text-sm text-red-600/90 dark:text-red-400/90 mt-0.5">Anda masih menggunakan password default. Segera ubah password Anda untuk keamanan.</p>
             </div>
           </div>
-          <span className={`inline-block px-4 py-2 rounded-full text-sm font-bold ${
-            user.role === 'ADMIN'
-              ? 'bg-yellow-400 text-yellow-900'
-              : 'bg-blue-400 text-blue-900'
-          }`}>
-            {user.role}
-          </span>
-        </div>
+        </AnimatedSection>
+      )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Edit Profile - Only show after password changed */}
-          {!mustChangePassword && (
-            <Card>
+      {/* 2. Hero Profile Header */}
+      {/* 2. Hero Profile Header */}
+      <AnimatedSection>
+        <div className="relative overflow-hidden rounded-2xl bg-card border border-border shadow-sm group">
+          {/* Background Gradient - Nuansa Lab MBC (Ungu-Biru Modern) */}
+          <div className="absolute top-0 left-0 w-full h-full md:h-48 bg-linear-to-r from-violet-600 to-indigo-600 opacity-100"></div>
+          
+          {/* Pattern Overlay (Opsional - agar tidak terlalu polos) */}
+          <div className="absolute inset-0 bg-[url('/file.svg')] opacity-5 bg-repeat space-x-4"></div>
+
+          <div className="relative px-8 pb-8 pt-8 md:pt-24">
+            <div className="flex flex-col md:flex-row items-center md:items-end gap-6">
+              {/* Avatar - Diberi Border Putih Tebal agar Kontras */}
+              <div className="w-24 h-24 rounded-full bg-white p-1 shadow-xl ring-4 ring-white/30 z-10">
+                <div className="w-full h-full rounded-full bg-slate-100 flex items-center justify-center text-3xl font-bold text-violet-700 select-none">
+                  {user.fullName?.charAt(0).toUpperCase() || 'U'}
+                </div>
+              </div>
+              
+              {/* User Info - TEKS DIPAKSA PUTIH AGAR KONTRAS DENGAN GRADIENT */}
+              <div className="flex-1 text-center md:text-left mb-2 z-10">
+                <h1 className="text-3xl font-bold text-white drop-shadow-md tracking-tight">
+                  {user.fullName}
+                </h1>
+                
+                {/* Username dengan warna putih agak transparan */}
+                <p className="text-white/80 font-medium text-lg mt-1">
+                  @{user.username}
+                </p>
+                
+                <div className="flex flex-wrap gap-2 justify-center md:justify-start mt-4">
+                  {/* Badge Role - Menggunakan background putih transparan (Glassmorphism) */}
+                  <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-white/20 text-white border border-white/30 backdrop-blur-sm">
+                    {user.role}
+                  </span>
+                  
+                  {memberData?.expertDivision && (
+                    <span className="px-3 py-1 rounded-full text-xs font-medium bg-black/20 text-white border border-white/10 backdrop-blur-sm">
+                      {memberData.expertDivision}
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </AnimatedSection>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        
+        {/* 3. Edit Profile Form */}
+        {!mustChangePassword && (
+          <AnimatedSection>
+            <Card className="h-full">
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-12 h-12 bg-gradient from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg">
-                  <User className="w-6 h-6 text-white" />
+                <div className="w-10 h-10 bg-blue-500/10 rounded-lg flex items-center justify-center text-blue-600 dark:text-blue-400">
+                  <User className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-gray-900">Edit Profile</h2>
-                  <p className="text-sm text-gray-500">Perbarui informasi pribadi Anda</p>
+                  <h2 className="text-lg font-bold text-foreground">Informasi Pribadi</h2>
+                  <p className="text-sm text-muted-foreground">Perbarui data diri Anda</p>
                 </div>
               </div>
             
-            <form onSubmit={handleProfileSubmit} className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Username / NIM
-                  </label>
-                  <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-500">
-                    {user.username}
+              <form onSubmit={handleProfileSubmit} className="space-y-5">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">NIM / Username</label>
+                    <div className="px-3 py-2 bg-muted/50 border border-border rounded-lg text-foreground text-sm font-medium">
+                      {user.username}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-muted-foreground uppercase mb-1.5">Nama Lengkap</label>
+                    <div className="px-3 py-2 bg-muted/50 border border-border rounded-lg text-foreground text-sm font-medium">
+                      {user.fullName}
+                    </div>
                   </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Nama Lengkap
-                  </label>
-                  <div className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-gray-500">
-                    {user.fullName}
+
+                <div className="space-y-4">
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-9 w-4 h-4 text-muted-foreground z-10" />
+                    <Input label="Email" type="email" name="email" value={profileForm.email} onChange={handleProfileChange} placeholder="email@example.com" className="pl-9" />
+                  </div>
+
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-9 w-4 h-4 text-muted-foreground z-10" />
+                    <Input label="Nomor Telepon" type="tel" name="phoneNumber" value={profileForm.phoneNumber} onChange={handleProfileChange} placeholder="08123456789" className="pl-9" />
+                  </div>
+
+                  <div className="relative">
+                    <LinkIcon className="absolute left-3 top-9 w-4 h-4 text-muted-foreground z-10" />
+                    <Input label="Social Media Link" type="url" name="socialMediaLink" value={profileForm.socialMediaLink} onChange={handleProfileChange} placeholder="https://linkedin.com/in/username" className="pl-9" />
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="relative">
+                        <Briefcase className="absolute left-3 top-9 w-4 h-4 text-muted-foreground z-10" />
+                        <Select label="Divisi Keahlian" name="expertDivision" value={profileForm.expertDivision} onChange={handleProfileChange} options={EXPERT_DIVISIONS} className="pl-9" />
+                    </div>
+                    <div className="relative">
+                        <Building className="absolute left-3 top-9 w-4 h-4 text-muted-foreground z-10" />
+                        <Select label="Departemen" name="department" value={profileForm.department} onChange={handleProfileChange} options={DEPARTMENTS} className="pl-9" />
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="relative">
-                <Mail className="absolute left-3 top-9 w-5 h-5 text-gray-400" />
-                <Input
-                  label="Email"
-                  type="email"
-                  name="email"
-                  value={profileForm.email}
-                  onChange={handleProfileChange}
-                  placeholder="email@example.com"
-                  className="pl-10"
-                />
-              </div>
+                <div className="pt-2">
+                  <Button type="submit" isLoading={isLoadingProfile} className="w-full">
+                    Simpan Perubahan
+                  </Button>
+                </div>
+              </form>
+            </Card>
+          </AnimatedSection>
+        )}
 
-              <div className="relative">
-                <Phone className="absolute left-3 top-9 w-5 h-5 text-gray-400" />
-                <Input
-                  label="Nomor Telepon"
-                  type="tel"
-                  name="phoneNumber"
-                  value={profileForm.phoneNumber}
-                  onChange={handleProfileChange}
-                  placeholder="08123456789"
-                  className="pl-10"
-                />
-              </div>
-
-              <div className="relative">
-                <LinkIcon className="absolute left-3 top-9 w-5 h-5 text-gray-400" />
-                <Input
-                  label="Social Media Link"
-                  type="url"
-                  name="socialMediaLink"
-                  value={profileForm.socialMediaLink}
-                  onChange={handleProfileChange}
-                  placeholder="https://instagram.com/username"
-                  className="pl-10"
-                />
-              </div>
-
-              <div className="relative">
-                <Briefcase className="absolute left-3 top-9 w-5 h-5 text-gray-400 z-10" />
-                <Select
-                  label="Divisi Keahlian"
-                  name="expertDivision"
-                  value={profileForm.expertDivision}
-                  onChange={handleProfileChange}
-                  options={EXPERT_DIVISIONS}
-                  className="pl-10"
-                />
-              </div>
-
-              <div className="relative">
-                <Building className="absolute left-3 top-9 w-5 h-5 text-gray-400 z-10" />
-                <Select
-                  label="Departemen"
-                  name="department"
-                  value={profileForm.department}
-                  onChange={handleProfileChange}
-                  options={DEPARTMENTS}
-                  className="pl-10"
-                />
-              </div>
-
-              <Button type="submit" isLoading={isLoadingProfile} className="w-full">
-                Simpan Perubahan
-              </Button>
-            </form>
-          </Card>
-          )}
-
-          {/* Change Password */}
-          <Card>
+        {/* 4. Change Password Form */}
+        <AnimatedSection>
+          <Card className="h-full border-red-200 dark:border-red-900/30">
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-12 h-12 bg-gradient from-red-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg">
-                <Lock className="w-6 h-6 text-white" />
+              <div className="w-10 h-10 bg-red-500/10 rounded-lg flex items-center justify-center text-red-600 dark:text-red-400">
+                <Lock className="w-5 h-5" />
               </div>
               <div>
-                <h2 className="text-lg font-bold text-gray-900">Ubah Password</h2>
-                <p className="text-sm text-gray-500">Ganti password akun Anda</p>
+                <h2 className="text-lg font-bold text-foreground">Keamanan</h2>
+                <p className="text-sm text-muted-foreground">Ubah password akun</p>
               </div>
             </div>
 
-            <form onSubmit={handlePasswordSubmit} className="space-y-4">
-              <Input
-                label="Password Saat Ini"
-                type="password"
-                name="currentPassword"
-                value={passwordForm.currentPassword}
-                onChange={handlePasswordChange}
-                required
-              />
-              <Input
-                label="Password Baru"
-                type="password"
-                name="newPassword"
-                value={passwordForm.newPassword}
-                onChange={handlePasswordChange}
-                required
-              />
-              <Input
-                label="Konfirmasi Password Baru"
-                type="password"
-                name="confirmPassword"
-                value={passwordForm.confirmPassword}
-                onChange={handlePasswordChange}
-                required
-              />
+            <form onSubmit={handlePasswordSubmit} className="space-y-5">
+              <Input label="Password Saat Ini" type="password" name="currentPassword" value={passwordForm.currentPassword} onChange={handlePasswordChange} required />
+              
+              <div className="space-y-4">
+                <Input label="Password Baru" type="password" name="newPassword" value={passwordForm.newPassword} onChange={handlePasswordChange} required />
+                <Input label="Konfirmasi Password Baru" type="password" name="confirmPassword" value={passwordForm.confirmPassword} onChange={handlePasswordChange} required />
+              </div>
 
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800">
-                <p className="font-bold flex items-center gap-2">
-                  ⚠️ Perhatian
-                </p>
-                <ul className="list-disc list-inside mt-2 space-y-1 text-xs">
-                  <li>Password minimal 6 karakter</li>
-                  <li>Anda akan logout otomatis setelah berhasil</li>
-                </ul>
+              <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4">
+                <div className="flex gap-3">
+                  <ShieldAlert className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" />
+                  <div>
+                    <h4 className="text-sm font-bold text-amber-700 dark:text-amber-400">Perhatian</h4>
+                    <ul className="list-disc list-inside mt-1 space-y-0.5 text-xs text-amber-600/90 dark:text-amber-500/90">
+                      <li>Password minimal 6 karakter.</li>
+                      <li>Anda akan logout otomatis setelah berhasil.</li>
+                    </ul>
+                  </div>
+                </div>
               </div>
 
               <Button type="submit" isLoading={isLoadingPassword} variant="danger" className="w-full">
@@ -322,7 +295,7 @@ export default function ProfilePage() {
               </Button>
             </form>
           </Card>
-        </div>
+        </AnimatedSection>
       </div>
 
       {/* Toast Notifications */}
@@ -334,6 +307,6 @@ export default function ProfilePage() {
           onClose={() => removeToast(toast.id)}
         />
       ))}
-    </>
+    </PageWrapper>
   );
 }

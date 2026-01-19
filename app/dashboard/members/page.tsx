@@ -8,11 +8,12 @@ import { useAuth } from '@/app/context/AuthContext';
 import Card from '@/app/components/ui/Card';
 import Button from '@/app/components/ui/Button';
 import Table from '@/app/components/ui/Table';
-import Link from 'next/link';
 import Select from '@/app/components/ui/Select';
 import Modal from '@/app/components/ui/Modal';
 import Toast from '@/app/components/ui/Toast';
 import { useToast } from '@/app/hooks/useToast';
+// IMPORT ANIMASI
+import { PageWrapper, AnimatedSection } from '@/app/components/ui/PageAnimation';
 
 export default function MembersPage() {
   const router = useRouter();
@@ -172,17 +173,21 @@ export default function MembersPage() {
   }
 
   return (
-    <>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-foreground">Members</h1>
-          {isAdmin && (
-            <Button onClick={() => router.push('/dashboard/members/new')}>
-              + Tambah Member
-            </Button>
-          )}
-        </div>
+    // Menggunakan PageWrapper sebagai container utama
+    <PageWrapper className="space-y-6 pb-10">
+      
+      {/* AnimatedSection untuk Header agar muncul duluan */}
+      <AnimatedSection className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-foreground">Members</h1>
+        {isAdmin && (
+          <Button onClick={() => router.push('/dashboard/members/new')}>
+            + Tambah Member
+          </Button>
+        )}
+      </AnimatedSection>
 
+      {/* AnimatedSection untuk Card Utama (Filter & Table) */}
+      <AnimatedSection>
         <Card>
           {/* Filters */}
           <div className="flex flex-col md:flex-row gap-4 mb-6">
@@ -232,9 +237,9 @@ export default function MembersPage() {
             emptyMessage="Belum ada member"
           />
         </Card>
-      </div>
+      </AnimatedSection>
 
-      {/* Delete Confirmation Modal */}
+      {/* Modal & Toast tidak perlu dianimasikan secara stagger */}
       <Modal
         isOpen={deleteModal.isOpen}
         onClose={() => setDeleteModal({ isOpen: false, member: null })}
@@ -255,7 +260,6 @@ export default function MembersPage() {
         </p>
       </Modal>
 
-      {/* Member Detail Modal */}
       <Modal
          isOpen={!!selectedMember}
          onClose={() => setSelectedMember(null)}
@@ -307,7 +311,6 @@ export default function MembersPage() {
         )}
       </Modal>
 
-      {/* Toast Notifications */}
       {toasts.map((toast) => (
         <Toast
           key={toast.id}
@@ -316,6 +319,6 @@ export default function MembersPage() {
           onClose={() => removeToast(toast.id)}
         />
       ))}
-    </>
+    </PageWrapper>
   );
 }

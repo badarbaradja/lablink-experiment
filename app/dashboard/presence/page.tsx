@@ -9,6 +9,8 @@ import Button from '@/app/components/ui/Button';
 import { Camera, Calendar, FileText, Upload, Clock, CheckCircle } from 'lucide-react';
 import { useAuth } from '@/app/context/AuthContext';
 import Select from '@/app/components/ui/Select';
+// Import Animasi
+import { PageWrapper, AnimatedSection } from '@/app/components/ui/PageAnimation';
 
 export default function PresencePage() {
   const { user } = useAuth();
@@ -110,9 +112,10 @@ export default function PresencePage() {
   ];
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <PageWrapper className="space-y-8 pb-10">
+      
+      {/* 1. Header Section */}
+      <AnimatedSection className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Presensi</h1>
           <p className="text-muted-foreground">Input dan riwayat kehadiran Anda</p>
@@ -127,12 +130,12 @@ export default function PresencePage() {
             <span>Lihat Rekap Presensi</span>
           </Link>
         )}
-      </div>
+      </AnimatedSection>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        {/* Input Form */}
-        <div className="lg:col-span-1">
+        {/* 2. Input Form (Kiri/Atas) */}
+        <AnimatedSection className="lg:col-span-1">
           <Card>
             <div className="flex items-center gap-3 mb-6">
               <div className="w-10 h-10 bg-blue-500/10 rounded-lg flex items-center justify-center">
@@ -246,10 +249,10 @@ export default function PresencePage() {
               </Button>
             </form>
           </Card>
-        </div>
+        </AnimatedSection>
 
-        {/* History List */}
-        <div className="lg:col-span-2">
+        {/* 3. History List (Kanan/Bawah) */}
+        <AnimatedSection className="lg:col-span-2">
           <Card>
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center gap-3">
@@ -280,7 +283,7 @@ export default function PresencePage() {
               <div className="space-y-4">
                 {history.map((item) => (
                   <div key={item.id} className="flex flex-col sm:flex-row gap-4 p-4 border border-border rounded-xl hover:shadow-md transition-shadow">
-                    <div className="flex-shrink-0">
+                    <div className="shrink-0">
                       <img 
                         src={item.imageUrl} 
                         alt="Evidence" 
@@ -327,9 +330,9 @@ export default function PresencePage() {
               </div>
             )}
           </Card>
-        </div>
+        </AnimatedSection>
 
       </div>
-    </div>
+    </PageWrapper>
   );
 }

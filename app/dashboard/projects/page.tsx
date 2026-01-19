@@ -14,6 +14,8 @@ import CreateArchiveModal from '@/app/components/archives/CreateArchiveModal';
 import Modal from '@/app/components/ui/Modal';
 import Toast from '@/app/components/ui/Toast';
 import { useToast } from '@/app/hooks/useToast';
+// IMPORT ANIMASI
+import { PageWrapper, AnimatedSection } from '@/app/components/ui/PageAnimation';
 
 export default function ProjectsPage() {
   const router = useRouter();
@@ -104,7 +106,6 @@ export default function ProjectsPage() {
       key: 'leader', 
       header: 'Ketua',
       render: (item: Project) => (
-        // UPDATE: Warna biru disesuaikan untuk dark mode agar tidak terlalu gelap
         <span className="font-medium text-blue-600 dark:text-blue-400">{item.leader.fullName}</span>
       )
     },
@@ -112,7 +113,6 @@ export default function ProjectsPage() {
       key: 'division', 
       header: 'Divisi',
       render: (item: Project) => (
-        // UPDATE: Background menggunakan opacity agar transparan dan adaptif
         <span className="text-xs px-2 py-1 bg-slate-500/10 text-slate-700 dark:text-slate-300 rounded-full font-medium">
           {item.division.replace('_', ' ')}
         </span>
@@ -122,7 +122,6 @@ export default function ProjectsPage() {
       key: 'status',
       header: 'Status',
       render: (item: Project) => {
-        // UPDATE: Warna status diperbaiki agar teks selalu terbaca jelas (dark/light)
         const colors: Record<string, string> = {
           NOT_STARTED: 'bg-slate-500/10 text-slate-700 dark:text-slate-400',
           IN_PROGRESS: 'bg-blue-500/10 text-blue-700 dark:text-blue-400',
@@ -142,11 +141,9 @@ export default function ProjectsPage() {
        header: 'Progress',
        render: (item: Project) => (
          <div className="w-24">
-            {/* UPDATE: Text menggunakan muted-foreground agar tidak hitam pekat */}
             <div className="flex justify-between text-xs mb-1 text-muted-foreground">
                <span>{item.progressPercent}%</span>
             </div>
-            {/* UPDATE: Background bar menyesuaikan tema */}
             <div className="w-full bg-secondary dark:bg-muted rounded-full h-1.5">
                <div 
                  className={`h-1.5 rounded-full ${item.progressPercent === 100 ? 'bg-green-500' : 'bg-blue-500'}`} 
@@ -220,19 +217,21 @@ export default function ProjectsPage() {
     );
   }
 
+  // UPDATE: Menggunakan PageWrapper untuk membungkus halaman
   return (
-    <>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          {/* UPDATE: text-gray-900 diubah menjadi text-foreground agar putih di dark mode */}
-          <h1 className="text-2xl font-bold text-foreground">Projects</h1>
-          {isAdmin && (
-            <Button onClick={() => router.push('/dashboard/projects/new')}>
-              + Buat Proyek
-            </Button>
-          )}
-        </div>
+    <PageWrapper className="space-y-6 pb-10">
+      {/* SECTION 1: Header */}
+      <AnimatedSection className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-foreground">Projects</h1>
+        {isAdmin && (
+          <Button onClick={() => router.push('/dashboard/projects/new')}>
+            + Buat Proyek
+          </Button>
+        )}
+      </AnimatedSection>
 
+      {/* SECTION 2: Filters & Table */}
+      <AnimatedSection>
         <Card>
           {/* Filters */}
           <div className="flex flex-col md:flex-row gap-4 mb-6">
@@ -242,7 +241,6 @@ export default function ProjectsPage() {
                 placeholder="Cari proyek / kode..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                // UPDATE: Input styling menggunakan variable theme (bg-input, text-foreground)
                 className="w-full px-4 py-2.5 text-sm bg-input border border-input text-foreground rounded-xl focus:outline-none focus:ring-2 focus:ring-primary transition-all duration-200 placeholder:text-muted-foreground"
               />
             </div>
@@ -297,16 +295,16 @@ export default function ProjectsPage() {
             emptyMessage="Belum ada proyek"
           />
         </Card>
-      </div>
+      </AnimatedSection>
 
-      {/* Detail Modal */}
+      {/* Components Overlay (Modal & Toast) tetap berada di dalam wrapper atau di luar tidak masalah,
+          tapi diletakkan di sini agar rapi */}
       <ProjectDetailModal
          isOpen={!!selectedProject}
          onClose={() => setSelectedProject(null)}
          project={selectedProject}
       />
 
-      {/* Delete Confirmation Modal */}
       <Modal
         isOpen={deleteModal.isOpen}
         onClose={() => setDeleteModal({ isOpen: false, project: null })}
@@ -321,13 +319,11 @@ export default function ProjectsPage() {
           Apakah Anda yakin ingin menghapus proyek{' '}
           <strong>{deleteModal.project?.name}</strong>?
         </p>
-        {/* UPDATE: text-gray-500 diubah menjadi text-muted-foreground */}
         <p className="text-sm text-muted-foreground mt-2">
           Tindakan ini tidak dapat dibatalkan.
         </p>
       </Modal>
 
-      {/* Archive Modal */}
       <CreateArchiveModal
         isOpen={archiveModal.isOpen}
         onClose={() => setArchiveModal({ isOpen: false, project: null })}
@@ -340,7 +336,6 @@ export default function ProjectsPage() {
         sourceName={archiveModal.project?.name || ''}
       />
 
-      {/* Toast Notifications */}
       {toasts.map((toast) => (
         <Toast
           key={toast.id}
@@ -349,6 +344,6 @@ export default function ProjectsPage() {
           onClose={() => removeToast(toast.id)}
         />
       ))}
-    </>
+    </PageWrapper>
   );
 }
