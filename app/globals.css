@@ -1,0 +1,190 @@
+@import "tailwindcss";
+
+/* 1. Konfigurasi Tema Tailwind v4 */
+@theme {
+  /* Base Colors */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  /* Component Colors */
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+
+  /* Brand Colors */
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+
+  /* Borders & Inputs */
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Custom Sidebar Theme */
+  --color-sidebar: var(--sidebar-bg);
+  --color-sidebar-foreground: var(--sidebar-fg);
+  --color-sidebar-hover: var(--sidebar-hover);
+  --color-sidebar-active: var(--sidebar-active);
+}
+
+/* 2. Definisi Variabel Warna */
+@layer base {
+  :root {
+    /* === LIGHT MODE VARIABLES === */
+    --background: #f8fafc; /* Slate 50 */
+    --foreground: #0f172a; /* Slate 900 */
+
+    --card: #ffffff;
+    --card-foreground: #0f172a;
+
+    --popover: #ffffff;
+    --popover-foreground: #0f172a;
+
+    --primary: #7f1d1d; /* Maroon */
+    --primary-foreground: #ffffff;
+
+    --secondary: #f1f5f9;
+    --secondary-foreground: #0f172a;
+
+    --muted: #f1f5f9;
+    --muted-foreground: #64748b;
+
+    --accent: #dc2626; /* Red 600 */
+    --accent-foreground: #ffffff;
+
+    --destructive: #ef4444;
+    --destructive-foreground: #ffffff;
+
+    --border: #e2e8f0;
+    --input: #ffffff;
+    --input-foreground: #0f172a;
+    --input-placeholder: #94a3b8;
+    --ring: #7f1d1d;
+
+    /* Sidebar - Tetap Maroon (Konsisten) */
+    --sidebar-bg: #7f1d1d;
+    --sidebar-fg: #ffffff;
+    --sidebar-hover: rgba(255, 255, 255, 0.15);
+    --sidebar-active: rgba(255, 255, 255, 0.25);
+  }
+
+  .dark {
+    /* === DARK MODE VARIABLES === */
+    --background: #020617; /* Slate 950 */
+    --foreground: #f8fafc; /* Slate 50 */
+
+    --card: #0f172a; /* Slate 900 */
+    --card-foreground: #f8fafc;
+
+    --popover: #0f172a;
+    --popover-foreground: #f8fafc;
+
+    --primary: #7f1d1d; /* Tetap Maroon */
+    --primary-foreground: #ffffff;
+
+    --secondary: #1e293b;
+    --secondary-foreground: #f8fafc;
+
+    --muted: #1e293b;
+    --muted-foreground: #94a3b8;
+
+    --accent: #dc2626;
+    --accent-foreground: #ffffff;
+
+    --destructive: #7f1d1d;
+    --destructive-foreground: #ffffff;
+
+    --border: #1e293b;
+    --input: #1e293b;
+    --input-foreground: #f8fafc;
+    --input-placeholder: #64748b;
+    --ring: #dc2626; /* Ring jadi merah terang di dark mode */
+
+    /* Sidebar - DIKUNCI KE MAROON (Agar tidak berubah warna) */
+    /* Menggunakan nilai yang sama persis dengan Light Mode */
+    --sidebar-bg: #7f1d1d; 
+    --sidebar-fg: #ffffff;
+    --sidebar-hover: rgba(255, 255, 255, 0.15);
+    --sidebar-active: rgba(255, 255, 255, 0.25);
+  }
+}
+
+/* 3. Global Reset */
+@layer base {
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    transition: background-color 0.3s ease, color 0.3s ease;
+  }
+  
+  * {
+    @apply border-border;
+  }
+}
+
+/* 4. Utilities */
+@layer utilities {
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-slate-300 dark:bg-slate-700 rounded-full transition-colors;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-slate-400 dark:bg-slate-600;
+  }
+
+  .card-shadow {
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+  }
+  .dark .card-shadow {
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.3), 0 1px 2px -1px rgba(0, 0, 0, 0.3);
+  }
+}
+
+/* 5. Components Override */
+@layer components {
+  input[type="text"],
+  input[type="search"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="date"],
+  textarea,
+  select {
+    @apply bg-input text-foreground border border-input rounded-md px-3 py-2 text-sm shadow-sm transition-all;
+    @apply placeholder:text-muted-foreground/70;
+  }
+
+  input:focus,
+  textarea:focus,
+  select:focus {
+    @apply outline-none ring-2 ring-ring ring-offset-0 border-transparent;
+  }
+  
+  .sidebar-item-hover:hover {
+    background-color: var(--sidebar-hover);
+  }
+  
+  .sidebar-item-active {
+    background-color: var(--sidebar-active);
+  }
+}
